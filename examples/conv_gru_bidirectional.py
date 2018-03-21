@@ -78,7 +78,7 @@ def generate_movies(n_samples=1200, n_frames=15):
 noisy_movies, shifted_movies = generate_movies(n_samples=1200)
 
 # Load a trained model if exists or train a model otherwise
-modelPath = os.getcwd() + '/conv_gru_model_enhanced_capacity.h5'
+modelPath = os.getcwd() + '/conv_gru_model_sum_bidirectional_merge.h5'
 if os.path.isfile(modelPath):
     print "Loading Model located at: " + modelPath
     seq = load_model(modelPath)
@@ -88,43 +88,31 @@ else:
     # (n_frames, width, height, channels) and returns a movie
     # of identical shape.
     seq = Sequential()
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        input_shape=(None, 40, 40, 1),
-        padding='same', return_sequences=True))
+    seq.add(Bidirectional(ConvGRU2D(filters=40, kernel_size=(3, 3), padding='same', return_sequences=True),
+        input_shape=(None, 40, 40, 1), merge_mode='sum'))
+
     seq.add(BatchNormalization())
 
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
+    seq.add(Bidirectional(ConvGRU2D(filters=40, kernel_size=(3, 3),
+                       padding='same', return_sequences=True),
+                       merge_mode='sum'))
     seq.add(BatchNormalization())
 
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
+    seq.add(Bidirectional(ConvGRU2D(filters=40, kernel_size=(3, 3),
+                       padding='same', return_sequences=True),
+                       merge_mode='sum'))
     seq.add(BatchNormalization())
 
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
+    seq.add(Bidirectional(ConvGRU2D(filters=40, kernel_size=(3, 3),
+                       padding='same', return_sequences=True),
+                       merge_mode='sum'))
     seq.add(BatchNormalization())
 
     seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
-        activation='sigmoid',
-        padding='same', data_format='channels_last'))
+                   activation='sigmoid',
+                   padding='same', data_format='channels_last'))
     seq.compile(loss='binary_crossentropy', optimizer='adadelta')
+
 
     # Train the network
     seq.fit(noisy_movies[:1000], shifted_movies[:1000], batch_size=10,
