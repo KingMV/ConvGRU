@@ -12,7 +12,11 @@ from keras.layers.convolutional_recurrent import ConvGRU2D
 from keras.layers.normalization import BatchNormalization
 from keras.utils import plot_model
 import numpy as np
-import pylab as plt
+
+import matplotlib
+matplotlib.use('Agg')
+import matplotlib.pyplot as plt
+#import pylab as plt
 
 # Artificial data generation:
 # Generate movies with 3 to 7 moving squares inside.
