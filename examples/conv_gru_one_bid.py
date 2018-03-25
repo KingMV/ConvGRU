@@ -32,6 +32,8 @@ def generate_movies(n_samples=1200, n_frames=15):
     shifted_movies = np.zeros((n_samples, n_frames, row, col, 1),
                               dtype=np.float)
 
+    np.random.seed(0)
+
     for i in range(n_samples):
         # Add 3 to 7 moving squares
         n = np.random.randint(3, 8)
@@ -119,7 +121,7 @@ else:
 # Testing the network on one movie
 # feed it with the first 7 positions and then
 # predict the new positions
-which = 1004
+which = 1017
 track = noisy_movies[which][:7, ::, ::, ::]
 
 for j in range(16):

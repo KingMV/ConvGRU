@@ -83,93 +83,80 @@ def generate_movies(n_samples=1200, n_frames=15):
 # Create a data set
 noisy_movies, shifted_movies = generate_movies(n_samples=1200)
 
-# Load a trained model if exists or train a model otherwise
-modelPath = os.getcwd() + '/conv_gru_model_enhanced_capacity.h5'
-if os.path.isfile(modelPath):
-    print "Loading Model located at: " + modelPath
-    seq = load_model(modelPath)
-    seq.summary()
-else:
-    # We create a layer which take as input movies of shape
-    # (n_frames, width, height, channels) and returns a movie
-    # of identical shape.
-    seq = Sequential()
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        input_shape=(None, 40, 40, 1),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
+# Load a trained models
+modelPath1 = os.getcwd() + '/conv_gru_model_skip_connection.h5'
+model1 = load_model(modelPath1)
 
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
+modelPath2 = os.getcwd() + '/conv_gru_model_sum_bidirectional_merge.h5'
+model2 = load_model(modelPath2)
 
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(ConvGRU2D(filters=40, kernel_size=(3, 3),
-        padding='same', return_sequences=True))
-    seq.add(BatchNormalization())
-
-    seq.add(Conv3D(filters=1, kernel_size=(3, 3, 3),
-        activation='sigmoid',
-        padding='same', data_format='channels_last'))
-    seq.compile(loss='binary_crossentropy', optimizer='adadelta')
-
-    # Train the network
-    seq.fit(noisy_movies[:1000], shifted_movies[:1000], batch_size=10,
-            epochs=300, validation_split=0.05)
-
-    #Save the model
-    seq.save(modelPath)
+modelPath3 = os.getcwd() + '/conv_gru_model_one_bid.h5'
+model3 = load_model(modelPath3)
 
 # Testing the network on one movie
 # feed it with the first 7 positions and then
 # predict the new positions
-which = 1004
+which = 1017
 track = noisy_movies[which][:7, ::, ::, ::]
+track2 = noisy_movies[which][:7, ::, ::, ::]
+track3 = noisy_movies[which][:7, ::, ::, ::]
 
 for j in range(16):
-    new_pos = seq.predict(track[np.newaxis, ::, ::, ::, ::])
+    new_pos = model1.predict(track[np.newaxis, ::, ::, ::, ::])
     new = new_pos[::, -1, ::, ::, ::]
     track = np.concatenate((track, new), axis=0)
 
+    new_pos2 = model2.predict(track2[np.newaxis, ::, ::, ::, ::])
+    new2 = new_pos2[::, -1, ::, ::, ::]
+    track2= np.concatenate((track2, new2), axis=0)
+
+    new_pos3 = model3.predict(track3[np.newaxis, ::, ::, ::, ::])
+    new3 = new_pos3[::, -1, ::, ::, ::]
+    track3 = np.concatenate((track3, new3), axis=0)
+
 # And then compare the predictions
 # to the ground truth
-track2 = noisy_movies[which][::, ::, ::, ::]
+track1 = noisy_movies[which][::, ::, ::, ::]
 for i in range(15):
     fig = plt.figure(figsize=(10, 5))
 
-    ax = fig.add_subplot(121)
+    ax = fig.add_subplot(222)
 
     if i >= 7:
-        ax.text(1, 3, 'Predictions !', fontsize=20, color='w')
+        ax.text(1, 3, 'skip-connection', fontsize=10, color='w')
     else:
-        ax.text(1, 3, 'Initial trajectory', fontsize=20)
+        ax.text(1, 3, 'Initial trajectory', fontsize=10)
 
     toplot = track[i, ::, ::, 0]
 
     plt.imshow(toplot)
-    ax = fig.add_subplot(122)
-    plt.text(1, 3, 'Ground truth', fontsize=20)
+
+    ax = fig.add_subplot(223)
+
+    if i >= 7:
+        ax.text(1, 3, 'bidirectional', fontsize=10, color='w')
+    else:
+        ax.text(1, 3, 'Initial trajectory', fontsize=10)
 
     toplot = track2[i, ::, ::, 0]
+
+    plt.imshow(toplot)
+
+    ax = fig.add_subplot(224)
+
+    if i >= 7:
+        ax.text(1, 3, 'one-bidirectional', fontsize=10, color='w')
+    else:
+        ax.text(1, 3, 'Initial trajectory', fontsize=10)
+
+    toplot = track3[i, ::, ::, 0]
+
+    plt.imshow(toplot)
+
+    ax = fig.add_subplot(221)
+    plt.text(1, 3, 'Ground truth', fontsize=10)
+
+    toplot = track1[i, ::, ::, 0]
     if i >= 2:
         toplot = shifted_movies[which][i - 1, ::, ::, 0]
 
